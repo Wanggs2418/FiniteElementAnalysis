@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 doc/
+# doc/ANSYS/ANSYS_Resources
 .Python
 build/
 develop-eggs/
