@@ -1,0 +1,56 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第08讲：动力学分析入门
+!!!!算例Ex08a
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex08a
+
+!!!!定义参数
+/prep7
+kx=5000        !!弹簧刚度N/m
+mx=1000        !!质量kg
+NN=5            !!质点总数
+
+!!!!定义单元类型
+et,1,mass21
+r,1,mx
+et,2,combin14
+r,2,kx
+
+!!!!定义节点和单元
+n,1,0,0,0
+*do,i,1,NN
+  n,i+1,0.1*i,0,0
+*enddo
+type,1
+real,1
+*do,i,2,NN+1
+  e,i
+*enddo
+type,2
+real,2
+*do,i,1,NN
+  e,i,i+1
+*enddo
+
+!!!!定义约束条件
+d,all,uy,0
+d,all,uz,0
+d,1,ux,0
+
+!!!!进行模态分析 
+/solu
+antype,modal
+modopt,lanb,NN
+mxpand,NN
+solve
+
+!!!后处理
+/post1
+/eshape,1
+set,first
+plnsol,u,x,0,1.0
+
+!!!!读取刚度矩阵/质量矩阵/阻尼矩阵
+!getKMC,2

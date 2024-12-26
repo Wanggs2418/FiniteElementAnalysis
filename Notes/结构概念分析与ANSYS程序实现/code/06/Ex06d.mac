@@ -1,0 +1,81 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第06讲：认识材料非线性
+!!!!算例Ex06d
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex06d
+
+/prep7 
+!!!!参数输入
+t=0.01      !!板厚度
+b=1.0       !!板宽度
+a=1.0*b     !!板长度
+Ex=2.06e11  !!弹性模量
+Nu=0.3           !!泊松比
+Fy=235e6        !!屈服强度
+alf=1
+qx=-Fy*t*2
+qy=alf*qx
+
+!!!!定义单元类型，实常数，材料特性 
+et,1,shell181
+r,1,t
+mp,ex,1,Ex
+mp,prxy,1,Nu
+tb,bkin,1,1,2,1
+tbdata,,Fy,0
+
+!!!建立几何模型
+k,1,-a/2,-b/2,0
+k,2,a/2,-b/2,0
+k,3,a/2,b/2,0
+k,4,-a/2,b/2,0
+a,1,2,3,4
+
+!!!单元划分
+aatt,1,1,1,0
+aesize,all,10*t
+amesh,all
+
+!!!施加约束
+dl,1, ,uz,0 
+dl,2, ,uz,0 
+dl,3, ,uz,0 
+dl,4, ,uz,0 
+dtran
+nsel,s,loc,x,0,0
+nsel,r,loc,y,0,0
+d,all,ux,0
+d,all,uy,0
+nsel,s,loc,x,0,0
+nsel,r,loc,y,-b/2,-b/2
+d,all,ux,0
+nsel,s,loc,x,0,0
+nsel,r,loc,y,b/2,b/2
+d,all,ux,0
+nsel,all
+
+!!!施加荷载
+sfl,2,pres,qx
+sfl,4,pres,qx
+sfl,1,pres,qy
+sfl,3,pres,qy
+sftran
+
+!!!静力解
+/solu 
+antype,0
+nsubst,200
+outres,all,all
+nlgeom,on
+solve 
+finish 
+
+!!!后处理
+/post1
+set,last
+set,previous
+plnsol,s,x,0,1.0
+plnsol,s,y,0,1.0
+plnsol,s,eqv,0,1.0

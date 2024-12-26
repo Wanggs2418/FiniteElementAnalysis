@@ -1,0 +1,53 @@
+! 读入初始应力文件
+midLen = mainWidth/2
+slope1 = 2*iniFactor*mainFy/midLen
+slope2 = -2*iniFactor*mainFy/midLen
+
+*cfopen, file_95, ist
+
+*vwrite
+('!')
+*vwrite
+('!*******INITIAL STRESS FILE file_95.ist')
+*vwrite
+('!')
+
+! 初始应力写入
+*do, i, 1, elemNum
+*vwrite
+('!')
+*vwrite, i
+!INITIAL STRESS RECORD FOR ELEMENT%8i
+*vwrite
+('!     SX            SY            SZ          SXY            SYZ           SXZ')
+*vwrite, i
+eis, %8i, 1
+! 获得单元中心点的x,y坐标
+x = centrx(i)
+y = centry(i)
+
+! 0.3*345=103.5
+! y向 
+*if, y, ge, mainThick, then
+    *if, y, le, midLen, then
+        rz = -iniFactor*mainFy+slope1*(y-0)
+    *else
+        rz = iniFactor*mainFy+slope2*(y-midLen)
+    *endif
+! x向
+*else    
+    *if, x, le, midLen, then
+        rz = -iniFactor*mainFy+slope1*(x-0)
+    *else
+        rz = iniFactor*mainFy+slope2*(x-midLen)
+    *endif
+*endif
+! 写入单元的14个积分点初始应力
+*do, nodei, 1, 14
+    ! 6e14.6共14位，其中小数位有6个，含负数
+    *vwrite, 0, 0, rz, 0, 0, 0
+    (6e14.6)
+*enddo
+*enddo
+
+*cfclos

@@ -1,0 +1,20 @@
+/prep7
+! 前面程序中的主材
+angleA = arg1   !角钢的面积
+insFactor = arg2    !残余应力峰值和fy的比值
+numInt = arg3   !积分点个数，残余应力施加在高斯积分点上
+! 定义1维数组
+*dim, streInt,, numInt  !积分点残余应力
+*dim, xInt,, numInt     !坐标值x
+*dim, yInt,, numInt
+
+! 读入积分点坐标
+! slist,1,1, ,full,Beam
+midLen = mainWidth/2
+*do, ix, 1, numInt
+    *if, xInt(ix), le, midLen, then
+        streInt(ix) = 2*0.3*fy*xInt(ix)/(midLen)-0.3*fy
+    *else
+        streInt(ix) = -2*0.3*fy*(xInt(ix)-midLen)/midLen+0.3*fy
+    *endif
+*enddo

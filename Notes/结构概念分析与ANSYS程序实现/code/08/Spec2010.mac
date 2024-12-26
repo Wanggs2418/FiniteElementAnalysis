@@ -1,0 +1,69 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!《抗震规范》GB50011-2010
+!!!!计算反应谱曲线
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/prep7
+Tg=arg1                !!!!场地特征周期
+alfmax=arg2        !!!!地震影响系数最大值αmax
+kes=arg3      !!!!阻尼比
+gra=9.8                !!!!重力加速度
+
+eta1=0.02+(0.05-kes)/(4+32*kes)                !!!!规范中的参数η1
+*if,eta1,lt,0.0,then
+ eta1=0.0
+*endif
+eta2=1+(0.05-kes)/(0.08+1.6*kes)            !!!!规范中的参数η2
+*if,eta2,lt,0.55,then
+ eta2=0.55
+*endif
+gama=0.9+(0.05-kes)/(0.3+6*kes)                !!!!规范中的参数γ
+
+*dim,ttt,,18            !!!自振周期
+*dim,fre,,18            !!!自振频率
+*dim,ace,,18            !!!对应的加速度
+
+!!!!输入反应谱曲线的结构周期
+ttt(1)=0.001
+ttt(2)=0.1
+*do,i,3,11
+  ttt(i)=(i-1)*0.5*Tg
+*enddo
+dT=(6.0-5*Tg)/7
+*do,i,12,18
+  ttt(i)=5.0*Tg+(i-11)*dT
+*enddo
+
+!!!!结构周期对应的频率
+*do,i,1,18
+  fre(i)=1/ttt(i)
+*enddo
+
+!!!!计算结构周期对应的加速度
+ace(1)=0.45*alfmax*gra
+ace(2)=eta2*alfmax*gra
+*do,i,3,11
+  ace(i)=(Tg/ttt(i))**gama*eta2*alfmax*gra
+*enddo
+*do,i,12,18
+  tempi=eta2*0.2**gama-eta1*(ttt(i)-5*tg)
+  ace(i)=tempi*alfmax*gra
+*enddo
+
+/out,spectrum2010,txt
+*vwrite,ttt(1),fre(1),ace(1)
+(3f30.20)
+/out
+
+!!!!将频率按升序排列
+*dim,tmp1,,18
+*dim,tmp2,,18
+*do,i,1,18
+  tmp1(19-i)=ace(i)
+  tmp2(19-i)=fre(i)
+*enddo
+*do,i,1,18
+  ace(i)=tmp1(i)
+  fre(i)=tmp2(i)
+*enddo
+tmp1=
+tmp2=

@@ -1,0 +1,54 @@
+/prep7
+nint=arg1							!!积分点数量
+Af=tf*b						  	!!单个翼缘面积
+Aw=(h-2*tf)*tw		  		!!腹板面积
+insf=arg2								!!翼缘残余应力峰值和fy的比值(负号为压应力)
+! 推导残余压应力和残余拉应力的关系
+! sigma_r2~sigma_r1
+! insw=sigma_r2残余拉应力
+insw=-insf*Af/(Af+Aw)		!!截面上要自平衡
+
+! 三个1维数组，长度为nint
+! 节点坐标系
+*dim,srint,,nint	    !!积分点处残余应力sr
+*dim,yint,,nint		    !!积分点y坐标
+*dim,zint,,nint		    !!积分点z坐标
+
+
+!!!!!!!!!!读入积分点坐标!!!!!!!!!
+! 从文件读取数据到数组 yint中
+! 读取的格式为：跳过21个空格,15列.5列(e格式计数)
+! 分别读取y,z坐标
+*vread,yint(1),intcord,txt,,,nint,,,,
+(21x,e15.5,15x)
+*vread,zint(1),intcord,txt,,,nint,,,,
+(36x,e15.5)
+
+!!!!!!!!!!调试程序，用于输出积分点坐标!!!!!!!!!
+!/out,intcord1,txt
+!*vwrite,yint(1),zint(1)
+!(21x,2e15.5)
+!/out
+!!!!!!!!!!调试完毕!!!!!!!!!
+
+!!!计算各积分点处的残余应力值
+! nint=288个积分点
+*do,ii,1,nint
+ *if,abs(yint(ii)),le,tw/2,then   !!!腹板上的残余应力
+  srint(ii)=insw*Fy   
+ *else           !!!!翼缘残余应力
+  srint(ii)=(insw+(insf-insw)/(b/2)*abs(yint(ii)))*Fy
+ *endif
+*enddo
+
+!!!计算各积分点处的残余应力值
+! 核心代码，空格表示选择所有
+! define,elementid单元编号,elem intg单元积分点编号,lay/cell截面分块编号，sect intg截面积分点编号,sx,sy,sz,sxy,syz,szx
+inistate,set,csys,-2				!!按单元坐标系输入残余应力
+inistate,set,dtyp,stre			!!输入应力值
+*do,ii,1,nint/4
+ *do,jj,1,4
+  ii1=4*(ii-1)+jj
+  inistate,define,,,ii,jj,srint(ii1),0,0,0,0,0
+ *enddo
+*enddo

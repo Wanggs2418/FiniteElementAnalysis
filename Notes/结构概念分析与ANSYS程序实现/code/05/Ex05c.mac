@@ -1,0 +1,119 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第05讲：四边简支板的屈曲荷载
+!!!!算例Ex05c
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex05c
+
+/prep7 
+!!!!参数输入
+t=0.01      !!板厚度
+b=1.0       !!板宽度
+a=1.0         !!板长度
+Ex=2.06e11  !!弹性模量
+Nu=0.3      !!泊松比
+Nx=1000*5000       !!荷载N/m，荷载放大5000倍
+! flag=1                    !!1代表板面内有约束，2代表无约束
+flag=1                    !!1代表板面内有约束，2代表无约束
+
+!!!!定义单元类型，实常数，材料特性 
+et,1,shell181
+r,1,t
+mp,ex,1,Ex
+mp,prxy,1,Nu
+
+!!!建立几何模型
+k,1,-a/2,-b/2,0
+k,2,a/2,-b/2,0
+k,3,a/2,b/2,0
+k,4,-a/2,b/2,0
+a,1,2,3,4
+
+!!!单元划分
+aatt,1,1,1,0
+aesize,all,5*t    !!!设置单元划分尺寸
+amesh,all
+
+!!!给两加载边施加约束
+DL,2, ,uz,0 
+DL,4, ,uz,0 
+
+!!!给两非加载边施加约束
+DL,1, ,uz,0 
+DL,3, ,uz,0 
+dtran
+
+!!施加x方向约束，消除刚体位移
+nsel,s,loc,x,0,0
+nsel,r,loc,y,b/2,b/2
+d,all,ux,0
+nsel,s,loc,x,0,0
+nsel,r,loc,y,-b/2,-b/2
+d,all,ux,0
+nsel,all
+
+!!!施加板面内约束
+*if,flag,eq,1,then
+  DL,1, ,uy,0 
+  DL,3, ,uy,0
+  dtran 
+*else
+  nsel,s,loc,x,0,0
+  nsel,r,loc,y,0,0
+  d,all,uy,0
+  nsel,all
+*endif
+
+!!!施加荷载
+sfl,2,pres,Nx 
+sfl,4,pres,Nx 
+sftran
+
+!!!首先进行静力解
+/solu 
+antype,0
+pstres,on 
+solve 
+finish 
+
+!!!然后进行屈曲分析
+/solu 
+antype,1      
+bucopt,lanb,4 
+mxpand,4,,,1 
+solve 
+
+!!!后处理，找到第1模态最大位移点
+/post1
+set,first
+nsort,u,sum
+*get,n1,sort,0,imax
+*get,dz,node,n1,u,z
+
+!!!施加初始缺陷
+/prep7
+D0=a/50/dz
+upgeom,D0,1,1,'Ex05c','rst'
+finish
+
+!!补充定义理想弹塑性
+/prep7
+Fy=235e6
+tb,bkin,1,1,2,1
+tbdata,,Fy,0,,,,
+
+/solu
+time,1
+antype,0
+nlgeom,on
+arclen,on
+nsubst,500
+outres,all,all
+solve
+finish
+
+!!!后处理
+/post26
+nsol,2,n1,u,z,
+nsol,3,394,u,z

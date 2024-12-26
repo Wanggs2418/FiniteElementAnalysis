@@ -1,0 +1,100 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第05讲：四边简支板的屈曲荷载
+!!!!算例Ex05d-卷尺
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex05d
+
+/prep7 
+!!!!参数输入
+t=0.15/1000       !!板厚度
+b=0.018             !!板宽度
+h=0.003             !!弓形矢高
+R=b*b/(8*h)+h/2 !!半径
+L=0.8                  !!板长度
+Ex=2.06e11          !!弹性模量
+Nu=0.3                   !!泊松比
+F1=2.00e-2            !!卷尺端头集中荷载(约2g)
+Dens=7.85e3
+Flag=2                    !!1=正放；2=反放；3=侧放
+
+!!!!定义单元类型，实常数，材料特性 
+et,1,shell181
+keyopt,1,3,2            !!完全积分，受弯为主的薄板要打开这个开关
+r,1,t
+mp,ex,1,Ex
+mp,prxy,1,Nu
+mp,dens,1,dens
+
+!!!建立几何模型
+k,11,0,0,0
+k,12,0,0,L
+y=-sqrt(R*R-0.5*b*0.5*b)
+k,1,-0.5*b,y,0
+k,2,0.5*b,y,0
+k,3,0.5*b,y,L
+k,4,-0.5*b,y,L
+k,5,0,-R,0
+k,6,0,-R,L
+larc,3,6,12,R,
+larc,6,4,12,R,
+l,4,1 
+larc,1,5,11,R,
+larc,5,2,11,R,
+l,3,2
+l,5,6
+al,1,6,5,7
+al,2,7,4,3
+
+!!!单元划分
+aatt,1,1,1,0
+aesize,all,10*t,
+amesh,all
+
+!!!!施加重力荷载
+*if,Flag,eq,1,then  !1为正放
+  acel,0,9.80,0
+  fk,6,fy,-F1
+*elseif,Flag,eq,2,then  !2为反放
+  acel,0,-9.80,0
+  fk,6,fy,F1
+*else
+  acel,-9.80,0,0
+  fk,6,fx,F1
+*endif
+ftran
+
+!!!!施加约束
+nsel,s,loc,z,0,0
+d,all,all,0
+allsel,all
+
+
+!!!首先进行静力解
+/solu 
+antype,0
+pstres,on
+solve 
+finish 
+
+!!!然后进行屈曲分析
+/solu 
+antype,1      
+bucopt,lanb,4,,,range
+mxpand,4,,,1 
+solve 
+
+!!!后处理
+/post1
+set,first
+plnsol,u,y,0,1.0
+
+!!!显示设置
+/PSF,PRES,NORM,2,0,1
+/PBC,u,,1 
+/PBC,rot,,1 
+/PBC,pres,,1 
+/VIEW,1,1,1,1   
+/ANG,1  
+/REP,FAST

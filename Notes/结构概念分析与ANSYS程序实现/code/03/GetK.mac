@@ -1,0 +1,50 @@
+!!!!!!!!!!!!!!!!!操作二进制文件，将刚度矩阵写入数组!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 接受两个参数，arg1=字符串参数,arg2=1 | 2
+finish
+/aux2 !操作2进制的文件
+file,arg1,full !打开文件 agr1.full 二进制文件
+*if,arg2,eq,1,then
+  hbmat,hbfile,txt,,ascii,stiff,yes        !!!!写刚度矩阵
+*else
+  hbmat,hbfile,txt,,ascii,mass,yes        !!!!写质量矩阵或应力刚度矩阵
+*endif
+finish
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*dim,tmp,,5                                     
+*vread,tmp(1),hbfile,txt,,,5,,,1   !!跳过第1行后读入5个数据
+(5F14.0)
+NumK=tmp(4)                        !刚度矩阵非零元总数
+NumF=tmp(5)                        !右边项总行数
+Nrow=NumF
+Ncol=NumF
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*dim,Ptcol,,NumF+1                                           !每列的起始非零元编号
+*dim,Ptrow,,NumK                            !每个非零元的行号
+*dim,Kval,,NumK                             !刚度矩阵元素的值
+*dim,Fval,,NumF                             !右边项元素的值
+*vread,Ptcol(1),hbfile,txt,,,NumF+1,,,5     !跳过前5行后读入每列的起始非零元编号
+(F14.0)                                       
+*vread,Ptrow(1),hbfile,txt,,,NumK,,,5+NumF+1  !跳过前5+NumF+1行后读入每个非零元的行号
+(F14.0)
+*VREAD,Kval(1),hbfile,txt,,,NumK,,,5+NumF+1+NumK        !读入矩阵非零元
+(D25.15)                                                           
+*VREAD,Fval(1),hbfile,txt,,,NumF,,,5+NumF+1+NumK+NumK        !读入右边项数据
+(D25.15)                                                           
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*dim,Kmatrix,,Ncol,Nrow             !定义矩阵，满矩阵存储的矩阵
+*do,i,1,Ncol                     !以列数循环
+  STA=Ptcol(i)                   !得到ICOL列的起始非零元的编号(一维存储序列中的编号)
+  END=Ptcol(i+1)-1               !得到ICOL列的最后非零元的编号(一维存储序列中的编号)
+  Icol=i
+  *do,j,STA,END                    !对当前列中的非零元素个数循环
+    Irow=Ptrow(j)                  !得到当前元素的行号(在满阵矩阵中的行号)
+    Kmatrix(Irow,Icol)=Kval(j)     !按行列号将元素值保存到矩阵中
+  *enddo
+*enddo                                        !结束两个循环
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*do,Irow,1,Ncol-1                             !形成上三角元素，进而得到满矩阵
+*do,Icol,Irow+1,Ncol 
+  Kmatrix(Irow,Icol)=Kmatrix(Icol,Irow)
+*enddo
+*enddo
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

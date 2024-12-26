@@ -1,0 +1,495 @@
+! 加载板线性约束设置
+! 进行初始缺陷引入，特征值屈曲分析
+! 说明
+! cm, mainsteel, volu !整个角钢组件
+
+finish
+/clear
+filename = 'L16010C80-1'
+/filename, filename
+/title, Ltest_2563.3
+/prep7
+/units, mpa !定义单位形式,mm,kg,s
+*afun, deg  !定义角度单位为度
+
+
+! --------------------------------------------------------
+! 01构件尺寸设定
+! --------------------------------------------------------
+! 主角钢尺寸
+mainWidth = 158.4
+mainThick = 10.01
+mainLen = 2563.3
+mainFilletIn = 16
+mainZc = 43.1   !重心距，形心到肢背
+mainTopFillet = mainThick/3   !肢尖倒角半径
+initBend = mainLen / 1000 !初弯曲选 l/1000
+iniFactor = 0.3 !残余应力施加系数，0.3fy
+
+! 加载板尺寸：中心坐标为主角钢形心
+rigidExtWid = mainWidth-mainZc+10 !从中心向外伸出的长度
+rigidWidth = 2*rigidExtWid
+rigidThick = 25
+
+! --------------------------------------------------------
+! 02设置属性和常数的设定
+! --------------------------------------------------------
+! 材料属性
+mainEm = 2.06e5    !Mpa
+mainTanm = mainEm*0.02  !切线模量
+mainPo = 0.3   !泊松比
+mainFy = 345    !fy=515,fu=680
+rigidEm = mainEm*10e3   !刚性板弹性模量
+rigidPo = mainPo
+! 主角钢属性
+mp, ex, 1, mainEm
+mp, prxy, 1, mainPo
+
+! 加载板属性
+mp, ex, 2, rigidEm
+mp, prxy, 2, rigidPo
+
+! 接触单元设定
+et, 1, solid95
+et, 2, targe170 !目标面单元
+et, 3, conta174 !接触面单元，绑定接触
+keyopt, 3, 12, 3				!绑定接触
+! 接触参数设定
+
+normalStiff = 0.01  !法向接触刚度因子
+maxExt = 0.05   !定义的最大穿透范围
+r, 2,,, normalStiff, maxExt 
+r, 3,,, normalStiff, maxExt
+
+
+! --------------------------------------------------------
+! 03创建几何模型
+! --------------------------------------------------------
+! 创建主角钢
+k1 = kpinqr(0, 14)  !查询函数，已定义的最大编号
+ln = lsinqr(0, 14)
+k, k1+1,,,
+k, k1+2, mainWidth,,
+k, k1+3, mainWidth, mainThick-mainTopFillet
+k, k1+4, mainWidth-mainTopFillet, mainThick
+k, k1+5, mainThick, mainThick
+k, k1+6, mainThick, mainWidth-mainTopFillet
+k, k1+7, mainThick-mainTopFillet, mainWidth
+k, k1+8, 0, mainWidth
+*do, i, 1, 7
+    l, k1+i, k1+i+1
+*enddo
+l, k1+8, k1+1
+lfillt, ln+4, ln+5, mainFilletIn    !内部倒角?
+al, all
+al = arinqr(0, 14)
+voffst, al, mainLen
+vsel, s, loc, z, 0, mainLen
+
+! 切分主角钢
+! 肢背正方形
+wpcsys, -1  !坐标系复原
+xoff = mainThick+mainFilletIn-cos(45)*mainFilletIn
+yoff = xoff
+wpoffs, xoff, yoff
+wprota,, 90    !绕x轴逆时针转90
+vsbw, all
+wprota,,, 90
+vsbw, all
+! 切分内部倒角
+wpcsys, -1
+wpoffs,, mainThick+mainFilletIn
+wprota,, 90
+vsbw, all
+wpcsys, -1
+wpoffs, mainThick+mainFilletIn
+wprota,,, -90
+vsbw, all
+! 切分两个肢尖
+wpcsys, -1
+wpoffs,, mainWidth-mainTopFillet	
+wprota,, 90
+vsbw, all
+wpcsys, -1
+wpoffs, mainWidth-mainTopFillet
+wprota,,, -90
+vsbw, all
+wpcsys, -1
+! s从全部对象，r从已选中选，u,去除选择，a,添加选择，invert反选择
+vsel, s, loc, z, 0, mainLen 
+cm, mainsteel, volu !整个角钢组件
+cmsel, s, mainsteel
+vsel, r, loc, x, 0, mainThick+mainFilletIn  
+vsel, r, loc, y, 0, mainThick+mainFilletIn
+cm, filletin, volu  !内部倒角组件
+cmsel, s, mainsteel
+vsel, s, loc, x, mainWidth-mainTopFillet, mainWidth
+vsel, a, loc, y, mainWidth-mainTopFillet, mainWidth
+cm, fillettop, volu !肢尖组件
+numcmp, all !整理组件编号
+allsel  ! selct all entities
+
+! 创建加载板 528
+ksel, none  !不选择前面的点，便于后续创建点
+wpoffs, mainZc, mainZc
+csys, 4 !激活工作平面
+k1 = kpinqr(0, 14)
+k, k1+1, -rigidExtWid, -rigidExtWid
+k, k1+2, rigidExtWid, -rigidExtWid
+k, k1+3, rigidExtWid, rigidExtWid
+k, k1+4, -rigidExtWid, rigidExtWid
+a, k1+1, k1+2, k1+3, k1+4
+a1 = arinqr(0, 14)
+voffst, a1, -rigidThick
+csys, 0 !激活全局坐标
+wpcsys, -1
+vsel, s, loc, z, -rigidThick, 0
+vgen, 2, all,,,,, mainLen+rigidThick
+vsel, s, loc, z, -rigidThick, 0
+vsel, a, loc, z, mainLen, mainLen+rigidThick 
+cm, rigidplan, volu
+
+! --------------------------------------------------------
+! 04划分网格
+! --------------------------------------------------------
+! 主角钢
+! 上下两个底面:划分内倒角到肢尖的中间部分
+allsel
+cmsel, s, mainsteel
+aslv
+lsla,all
+middleWid = mainWidth-mainFilletIn-mainTopFillet-mainThick
+lsel, r, length,, middleWid
+lesize, all, middleWid/10
+! 划分肢厚
+allsel
+cmsel, s, mainsteel
+aslv
+lsla, all
+lsel, r, length,,mainThick
+lesize, all,,, 1    !肢厚一等分
+! 划分肢背方形部分
+allsel
+cmsel, s, filletin
+filletWid = mainFilletIn+mainThick-cos(45)*mainFilletIn
+aslv
+lsla, all
+lsel, r, length,, filletWid
+lesize, all,,, 1
+! 划分肢背圆弧段
+allsel
+cmsel, s, filletin
+filletWid = mainFilletIn+mainThick-cos(45)*mainFilletIn
+aslv
+lsla, all
+lsel, r, length,, cos(45)*mainFilletIn
+lesize, all,,, 2, 1
+! 划分肢尖段下部
+allsel
+cmsel, s, fillettop
+aslv
+lsla, all
+lsel, r, loc, z, 0
+lesize, all,,, 1    !一个单元
+! 划分肢尖段上部
+allsel
+cmsel, s, fillettop
+aslv
+lsla, all
+lsel, r, loc, z, mainLen
+lesize, all,,, 1    !一个单元
+! 侧面:矩形线框
+allsel
+cmsel, s, mainsteel
+aslv
+lsla, all
+lsel, u, tan1, z    !去除所有与z轴垂直的线
+cm, mainSideLine, line
+lesize, all, 2.5*middleWid/10 !侧面矩形线框，取单元长宽比为2.5
+! 赋予属性并划分单元
+allsel
+cmsel, s, mainsteel
+vatt, 1,, 1  !属性赋予
+mshape, 0, 3d   !设定六面体单元
+mshkey, 1 !选择映射划分
+esize, mainWidth/12 !为划分的部分设定大小为12
+vsweep, all
+
+! 划分加载板
+! 厚度方向
+allsel
+cmsel, s, rigidplan
+aslv
+lsla
+lsel, r, length,, rigidThick, 
+lesize, all,,, 1
+! 宽度
+numDiv = 10
+allsel
+cmsel, s, rigidplan
+aslv
+lsla
+lsel, u, length,, rigidThick
+lesize, all,,, numDiv
+! 属性赋予
+allsel
+cmsel, s, rigidplan
+vatt, 2,, 1
+mshape,0,3d !六面体
+mshkey,1    !映射
+vsweep,all	!网格划分完成
+
+! --------------------------------------------------------
+! 05接触设置
+! --------------------------------------------------------
+! 主角钢与加载板-绑定接触 1271
+allsel
+!底部角钢和加载板绑定接触
+cmsel, s, mainsteel       
+nslv, s, 1   !1代表选择所有节点
+nsel, r, loc, z, 0   !选择了xy平面
+real, 2     !参数定义中的定义实常数中已定义,r,2
+type, 3     !主角钢为接触面单元，单元类型为3，即前面的 et,3
+esurf
+cmsel, s, rigidplan
+nslv, s, 1
+nsel, r, loc, z, 0
+real, 2      !加载板为目标面单元,刚性面
+type, 2
+esurf
+
+!顶部角钢和加载板绑定接触
+cmsel, s, mainsteel
+nslv, s, 1
+! nsel, r, loc, z, l, l+0.1
+nsel, r, loc, z, mainLen
+real, 3
+type, 3
+esurf
+cmsel, s, rigidplan
+nslv, s, 1
+nsel, r, loc, z, mainLen
+real, 3
+type, 2 
+esurf		
+allsel
+save
+
+! 仅选择主角钢进行初应力的施加
+esel, s, type,, 1
+cmsel, r, mainsteel
+eslv
+! 获取所选集合的单元数
+*get, elemNum, elem, 0, count
+! 施加残余应力
+/input, stre, txt
+! 施加全约束,观察结果
+nsle, all
+d, all, all
+/solu
+! eresx, no   !不从积分点外推
+isfile, read, file_95, ist,, 2
+! isfile, list
+solve
+/post1
+plnsol, s, eqv
+
+
+! --------------------------------------------------------
+! 06约束设置
+! --------------------------------------------------------
+! 消除全约束，施加实际约束
+lsclear, all
+! 底部约束设置
+allsel
+cmsel, s, rigidplan 
+eslv
+nsle
+local, 11, 0, mainZc, mainZc, 0, 45 !主角钢形心坐标
+csys, 11
+nsel, r, loc, z, -rigidThick
+nsel, r, loc, x, 0
+cm, constrainBot, node
+nrotat, all
+d, all, all !底部中心施加
+
+! 顶部约束设置
+allsel
+cmsel, s, rigidplan 
+eslv
+nsle
+nsel, r, loc, z, mainLen+rigidThick, mainLen+rigidThick+0.1 
+nsel, r, loc, x, 0
+cm, constrainTop, node
+nsel, r, loc, y, 0
+cm, topCenNode, node
+cmsel, s, constrainTop
+nrotat, all
+d, all, ux !顶部中心施加
+d, all, uy
+
+
+/solu
+allsel
+time, 1
+iswrite,on  !得到应力文件
+! /output, file_opt, txt
+csys, 0
+nodeUz = node(mainZc, mainZc, mainLen+rigidThick) !集中力作用点-形心
+f, nodeUz, fz, -forceBuckling   !设置的forceBuckling=1
+autots, on
+pstres, on
+lnsrch, on !打开线性搜索
+pred, on    !非线性分析预测器，加速收敛
+eqslv, sparse !稀疏矩阵直接法
+nropt, full,, on    !完全newton-raphon法
+kbc, 0  !ramped,斜坡荷载
+nsubst, subStepNum, subStepMax, subStepMin 
+outres, all, all    !写入每个子步
+allsel
+ncnv, 2 !不收敛时终止分析但不退出程序
+solve
+finish
+
+
+
+
+! --------------------------------------------------------
+! 07荷载施加并求解
+! --------------------------------------------------------
+! 预应力分析为非线性模型-静力分析 
+/solu
+allsel
+time, 1
+csys, 0
+autots, on
+pstres, on
+lnsrch, on !打开线性搜索
+pred, on    !非线性分析预测器，加速收敛
+eqslv, sparse !稀疏矩阵直接法
+nropt, full,, on    !完全newton-raphon法
+kbc, 0  !ramped,斜坡荷载
+nsubst, subStepNum, subStepMax, subStepMin 
+outres, all, all    !写入每个子步
+allsel
+iswrite,on  !得到应力文件
+ncnv, 2 !不收敛时终止分析但不退出程序
+solve
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+! 前 6 阶特征值屈曲分析 
+/solu
+antype, buckle  !特征值屈曲
+bucopt, lanb, 6 !采取分块兰索斯法，特征值数目为6阶
+mxpand, 6   !扩展模态，即进行了归一化处理
+outres, all, all
+solve
+finish
+
+!后处理，找到第1模态最大位移点
+/post1
+/efacet, 4  !设置的显示精度，值越大越清晰
+! /trlcy, elem, 0.9   !设置单元的透明度
+! /trlcy, elem, 0   !恢复原状-不透明
+rsys, 12    !用局部坐标系12查看
+! plnsol, u, sum, 0, 1.0 !全局坐标系下显示总的位移
+plnsol, u, x, 0, 1.0 !局部坐标系下显示x的位移
+/view, 1, 0, 1, 0
+set,first !显示一阶模态
+nsort,u,sum !节点，按照和位移进行排序
+*get,ndMax,sort,0,imax !将位移位移最大的节点编号写入ndMax
+*get,dsumMax,node,ndMax,u,sum !将最大位移节点方向的位移写入到ndMax
+*get, modelFactor, model, 1, freq !直接获取特征值屈曲系数,即线性屈曲力
+
+!施加初始缺陷
+/prep7
+codeFactor = mainLen/1000
+initFactor = codeFactor/dsumMax !相对于 1 阶模态的比例放大系数
+upgeom, initFactor, 1, 1, filename, rst
+cdwrite, db, file_eigen, cdb    !导出文件
+finish
+
+! 施加残余应力
+! 重新建模，约束所有的节点，读取应力施加
+! 1表示在单元积分点处施加残余应力；0 在单元质心上；2 在单元指定位置施加，3 在常应力方式施加
+isfile, read, resStre, ist,, 2
+! 列出施加的初应力
+! isfile, list
+ldread, reac, 1, 1,,, 'istName', rst,
+
+
+/solu
+allsel
+csys, 0
+antype, 0   !分析类型，static analysis
+nlgeom, 1   !大变形-开
+! 极限承载力分析-94
+time, 1
+! /output, file_opt, txt
+! 类似于 d, node(x, y, z), uz, uzMax
+topNodeZc = node(mainZc, mainZc, mainLen+rigidThick) !集中力作用点-形心
+d, topNodeZc, uz, uzMax    !位移法施加的最大位移
+autots, on  !自动时间步,auto time step
+lnsrch, on !打开线性搜索
+pred, on    !非线性分析预测器，加速收敛
+eqslv, sparse !稀疏矩阵直接法
+nropt, full,, on    !完全newton-raphon法
+kbc, 0  !ramped,斜坡荷载
+nsubst, subStepNum, subStepMax, subStepMin 
+outres, all, all    !写入每个子步
+allsel
+ncnv, 2 !不收敛时终止分析但不退出程序
+solve
+finish
+save
+
+
+! --------------------------------------------------------
+! 08后处理
+! --------------------------------------------------------
+! 绘制荷载位移曲线
+/post26
+numvar, 200 !进入后处理允许的最大变量数
+allsel
+nsel, s, loc, x, mainZc
+nsel, r, loc, y, mainZc
+nsel, r, loc, z, mainLen+rigidThick, mainLen+rigidThick+0.1
+cm, topCenterNode, node
+! *get, topCenterlNode, node, 0, num, max !0表示某类代表的所有实体
+*get, topCenNode, node, 0 !0表示某类代表的所有实体
+nsol, 2, topCenNode, u, z
+
+allsel
+cmsel, s, constrainBot, node
+
+/SHOW,JPEG,,0        !荷载位移曲线截图
+JPEG,QUAL,75,        
+JPEG,ORIENT,HORIZ   
+JPEG,COLOR,2
+JPEG,TMOD,1 
+! /GFILE,800, 
+/GFILE,1200, 
+!*  
+/CMAP,_TEMPCMAP_,CMP,,SAVE  
+/RGB,INDEX,100,100,100,0
+/RGB,INDEX,0,0,0,15 
+/REPLOT 
+/CMAP,_TEMPCMAP_,CMP
+/DELETE,_TEMPCMAP_,CMP  
+/SHOW,CLOSE 
+/DEVICE,VECTOR,0

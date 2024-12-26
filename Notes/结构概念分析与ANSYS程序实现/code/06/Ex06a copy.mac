@@ -1,0 +1,85 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第06讲：认识材料非线性
+!!!!算例Ex06a-加载和卸载
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filename,Ex06a
+
+/prep7
+PI=3.1415926535
+L=10.0
+r=0.1
+NN=10
+Fy=200e6            !!屈服强度
+Ex=2.0e11            !!弹性模量
+Nu=0.0                !!泊松比
+Area=r*r*PI
+Ny=Area*Fy        !!全截面屈服荷载
+dy=L*Fy/Ex        !!屈服应变对应的伸长量
+
+!!!定义单元类型，实常数，材料类型
+et,1,beam188
+sectype,1,beam,csolid              !!定义截面类型，实心圆截面
+secoffset,cent                             !!截面按形心对中
+secdata,r,20,10                            !!定义截面参数，环向划分20份，径向10份
+mp,Ex,1,Ex
+mp,prxy,1,Nu
+tb,bkin,1,1,2,1
+tbdata,,Fy,0.1*Ex
+
+!!定义节点和单元
+*do,i,1,NN+1
+  n,i,L/NN*(i-1),0,0
+*enddo
+*do,i,1,NN
+  e,i,i+1
+*enddo
+/eshape,1
+
+!!施加约束
+d,1,all,0
+d,all,uy,0
+d,all,uz,0
+
+/solu
+nsubst,20   !20个子步
+autots,off  !关闭自动迭代步长
+outres,all,all
+nlgeom,on
+
+/solu
+time,1
+f,NN+1,fx,Ny
+! d,NN+1,ux,dy
+solve
+
+time,2
+f,NN+1,fx,1.2*Ny
+solve
+
+time,3  !卸载
+f,NN+1,fx,0*Ny
+solve
+
+
+/post1
+set,last
+plnsol,u,x,0,1
+
+/post26
+nsol,2,NN+1,u,x
+! rforce,3,NN+1,f,x !NN+1节点处的反力作为3号变量
+xvar,2
+! plvar,3
+plvar,1
+
+!!!讲课中需要修改的命令流
+!tb,miso,1,1,3, 
+!tb,kinh,1,1,3, 
+!tbpt,,Fy/Ex,Fy
+!tbpt,,Fy/Ex*2,1.2*Fy
+!tbpt,,Fy/Ex*6,1.6*Fy
+!ddele,NN+1,ux,,,on
+!d,NN+1,ux,1.2*dy
+!rforce,3,NN+1,f,x

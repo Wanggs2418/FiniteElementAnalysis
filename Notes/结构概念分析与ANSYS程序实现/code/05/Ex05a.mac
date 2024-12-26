@@ -1,0 +1,83 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第05讲：四边简支板的屈曲荷载
+!!!!算例Ex05a
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex05a
+
+/prep7 
+!!!!参数输入
+t=0.01      !!板厚度
+b=1.0       !!板宽度
+a=1.0         !!板长度
+Ex=2.06e11  !!弹性模量
+Nu=0.3      !!泊松比
+pres=1000   !!荷载N/m
+
+!!!!定义单元类型，实常数，材料特性 
+et,1,shell181
+r,1,t
+mp,ex,1,Ex
+mp,prxy,1,Nu
+
+!!!建立几何模型
+k,1,-a/2,-b/2,0
+k,2,a/2,-b/2,0
+k,3,a/2,b/2,0
+k,4,-a/2,b/2,0
+a,1,2,3,4
+
+!!!单元划分
+! 材料号，实常数号，单元类型号，坐标系编号
+aatt,1,1,1,0    !赋予材料属性
+aesize,all,5*t    !!!设置单元划分尺寸
+amesh,all
+
+!!!给两加载边施加约束
+DL,2, ,uz,0 
+DL,4, ,uz,0 
+
+!!!给两非加载边施加约束
+DL,1, ,uz,0 
+DL,3, ,uz,0 
+DL,1, ,uy,0 
+DL,3, ,uy,0 
+dtran   !转换到单元上
+
+!!施加x方向约束，消除刚体位移
+nsel,s,loc,x,0,0
+nsel,r,loc,y,b/2,b/2
+d,all,ux,0
+nsel,s,loc,x,0,0
+nsel,r,loc,y,-b/2,-b/2
+d,all,ux,0
+!nsel,s,loc,x,0,0
+!nsel,r,loc,y,0,0
+!d,all,uy,0
+!nsel,all
+
+!!!施加荷载
+! specifies surface loads
+SFL,2,PRES,pres 
+SFL,4,PRES,pres 
+sftran
+
+!!!首先进行静力解
+/solu 
+antype,0
+pstres,on 
+solve 
+finish 
+
+!!!然后进行屈曲分析
+/solu 
+antype,1      
+bucopt,lanb,4 
+mxpand,4,,,1 
+solve 
+
+!!!后处理
+/post1
+set,first
+plnsol,u,z,0,1.0

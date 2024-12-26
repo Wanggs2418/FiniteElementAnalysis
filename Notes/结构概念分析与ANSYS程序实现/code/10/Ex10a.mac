@@ -1,0 +1,80 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第10讲：国家大剧院钢网壳施工过程分析
+!!!!引例Ex10a
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex10a
+
+!!!!!参数输入
+/prep7
+L=10.0            !!跨度
+NN=40                !!分段数量
+Ex=2.06e11    !!弹性模量
+q=5000            !!均布荷载
+b=0.2              !!方管截面宽度
+h=0.3              !!方管截面高度
+t=0.01          !!方管管壁厚度
+
+/prep7
+et,1,beam188                                        !!定义单元类型
+keyopt,1,3,3                                        !!高阶形函数
+sectype,1,beam,hrec,,1             !!定义截面类型
+secoffset,cent                                !!截面按形心对中
+secdata,h,b,t,t,t,t                        !!定义截面参数
+mp,ex,1,Ex                                            !!定义材料特性
+
+!!!!!定义节点和单元
+dx=L/NN
+*do,i,1,NN+1
+  n,i,(i-1)*dx,0,0
+*enddo
+*do,i,1,NN
+  e,i,i+1
+*enddo
+
+!!!进入求解阶段，约束和荷载在/solu中施加和修改
+/solu
+antype,static
+outres,all,all
+nsubst,10
+nlgeom,on
+autots,off            !!关闭自动迭代步长
+
+!!!!!第1步：梁端简支，施加恒荷载
+/solu
+sfbeam,all,2,pres,q
+d,all,uz,0
+d,all,rotx,0
+d,1,ux,0
+d,1,uy,0
+d,NN+1,uy,0
+d,NN+1,uy,0
+time,1
+solve
+
+!!!!!第2步：梁端固定，施加活荷载
+/solu
+d,1,rotz,0
+d,NN+1,rotz,0
+sfcum,pres,add
+sfbeam,all,2,pres,q
+time,2
+solve
+
+!!!!画弯矩图
+/post1
+etable,mzi,smisc,3  
+etable,mzj,smisc,16  
+plls,mzi,mzj,-1,0  
+
+!!!!!!!!!!讲课中修改命令流
+!/post1
+!*get,rt1,node,1,rot,z
+!*get,rt2,node,NN+1,rot,z
+!/solu
+!time,2
+!d,1,rotz,rt1
+!d,NN+1,rotz,rt2
+!solve
+!kbc,1

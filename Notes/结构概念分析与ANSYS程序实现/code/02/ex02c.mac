@@ -1,0 +1,104 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第02讲：求解球面壳体的临界荷载
+!!!!算例ex02c
+! 实心的钢筋混凝土网壳-shell181
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,ex02c
+
+!!!!!参数输入
+/prep7
+PI=3.1415926535
+R=15    !!球面半径
+f=5   !!矢高
+Nr=30  !!径向划分数量
+Nc=90 !!环向划分数量
+alf=acos((R-f)/R)*180/PI        !!圆心角(度）
+alf0=90-alf                      !!起始圆心角
+dalf=alf/Nr                        !!每个网格对应的圆心角
+dbeta=360/Nc
+Ex=3.0e10        !!弹性模量
+Nu=0.2              !!泊松比
+t=0.08                !!方管管壁厚度
+Fz=1000          !!节点荷载
+
+!!!!!前处理
+/prep7
+et,1,shell181        !!定义单元类型
+mp,ex,1,Ex          !!定义材料特性
+mp,nuxy,1,Nu    
+r,1,t
+
+!!!!!定义节点
+Nnode=Nc*Nr+1          !!节点总数
+N,Nnode,0,0,R          !!顶点
+csys,2                        !!球面坐标系
+*do,i,1,Nr
+  *do,j,1,Nc
+    inode=Nc*(i-1)+j            !!当前节点号
+    n,inode,R,(j-1)*dbeta,alf0+(i-1)*dalf
+  *enddo
+*enddo
+csys,0                        !!直角坐标系
+
+!!!!!定义单元
+type,1
+real,1
+mat,1
+*do,i,1,Nr-1
+  *do,j,1,Nc
+    inode=Nc*(i-1)+j            !!每环首节点号
+    *if,j,ne,Nc,then
+      e,inode,inode+1,inode+1+Nc,inode+Nc
+    *else
+      e,inode,inode-Nc+1,inode+1,inode+Nc
+    *endif
+  *enddo
+*enddo
+*do,i,Nr,Nr
+  *do,j,1,Nc
+    inode=Nc*(i-1)+j            !!每环首节点号
+    *if,j,ne,Nc,then
+      e,inode,inode+1,Nnode
+    *else
+      e,inode,inode-Nc+1,Nnode
+    *endif
+  *enddo
+*enddo
+
+!!!!施加约束
+nsel,s,,,1,Nc
+d,all,ux,0
+d,all,uy,0
+d,all,uz,0
+
+!!!施加荷载
+nsel,s,,,Nc+1,Nnode
+f,all,fz,-Fz
+nsel,all
+
+!!!首先进行静力分析
+/solu 
+antype,0
+pstres,on         !!!打开预应力开关
+solve 
+finish                 !!!结束当前求解
+
+!!!然后进行屈曲分析
+/solu 
+antype,1      
+bucopt,lanb,10 
+mxpand,10,,,1 
+solve 
+
+!!!后处理
+/post1
+set,1,1
+plnsol,u,z,0,1.0
+
+!!!显示设置
+/view,1,1,1,1 
+/ang,1 
+/ang,1,-120,zs,1
+/rep,fast   

@@ -1,0 +1,80 @@
+!!!注意：附件解压缩后放到当前工作目录
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第10讲：国家大剧院钢网壳施工过程分析
+!!!!算例Pr02a
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!正题
+!!!本命令流用于施工过程分析
+!!!工况：1.0*杆件自重+1.0*节点自重+10*雪荷载
+
+finish
+/clear
+/filname,Pr02a
+/uis,msgpop,3 
+/nerr,5,10000,  
+
+!!!定义单元类型
+/prep7
+et,1,beam4       !!空间梁单元，上部钢结构
+et,2,solid186    !!20节点实体单元，下部混凝土环梁
+et,3,link8       !!杆单元
+
+!!!定义材料特性
+mp,ex,1,2.06e11  !!钢材
+mp,nuxy,1,0.3
+mp,dens,1,7.85e3 
+mp,ex,2,3.00e10  !!混凝土C30
+mp,nuxy,2,0.2
+mp,dens,2,2.5e3 
+mp,ex,3,2.06e11  !!刚性材料
+mp,nuxy,3,0.0
+mp,dens,3,0.0
+
+!!!定义实常数
+/input,real,txt
+
+!!!输入混凝土环梁
+nread,rcnode,txt
+eread,rcele,txt
+
+!!!约束混凝土环梁底部
+nsel,s,loc,z,-1.486,-1.486
+d,all,ux,0
+d,all,uy,0
+d,all,uz,0
+allsel,all
+
+!!!读入上部钢结构节点信息和单元信息
+nread,node,txt            !!!输入节点坐标
+eread,beam,txt                        !!!输入梁单元
+eread,link,txt                        !!!输入杆单元
+/input,botbeam,txt          !!!输入柱脚（用刚度很大的梁单元模拟）
+
+!!!求解设置：打开几何大变形开关
+/solu
+antype,static
+outres,all,all
+nsubst,1
+nlgeom,on
+fcum,add,1
+
+!!!第1步，施加恒载和自重，拱脚铰接
+/solu
+time,1
+acel,0,0,9.996,             !输入自重9.8*1.02标准值
+/input,jw,txt                    !输入节点自重标准值
+solve
+
+!!!第2步，拱脚变为刚接，施加雪荷载
+/solu
+time,2
+cpintf,ux,0.05
+cpintf,uy,0.05
+cpintf,uz,0.05
+/input,snow,txt             !输入雪荷载标准值(本例中将雪放大了10倍)
+solve
+
+!!!后处理：画位移
+/post1
+plnsol,u,z, 0,1.0

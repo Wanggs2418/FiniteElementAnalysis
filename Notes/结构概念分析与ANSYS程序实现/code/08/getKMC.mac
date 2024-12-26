@@ -1,0 +1,36 @@
+!!!!子程序读取刚度矩阵
+finish
+/solu
+antype,7            !!求解子结构
+seopt,kmc,3        !!定义存储子结构刚度矩阵的文件名kmc.sub
+nsel,all
+m,all,all            !!定义superelement的自由度
+solve
+selist,kmc,1    
+
+finish
+/aux2                !!操作二进制文件，将刚度矩阵写入数组
+file,kmc,sub
+*if,arg1,eq,1,then
+  hbmat,hbfile,txt,,ascii,stiff,yes        !!!!写刚度矩阵
+*elseif,arg1,eq,2,then
+  hbmat,hbfile,txt,,ascii,mass,yes        !!!!写质量矩阵
+*else
+  hbmat,hbfile,txt,,ascii,damp,yes        !!!!写阻尼矩阵
+*endif
+finish
+
+*dim,tmp1,,5
+*vread,tmp1(1),hbfile,txt,,,4,,,2   !!跳过第2行后读入4个数据
+(A3,11X,4F14.0)
+nK=tmp1(2)                                        !!刚度矩阵维数
+nKK=nK*nK                                            !!刚度矩阵元素总数
+*dim,tmp,,nKK
+*vread,tmp(1),hbfile,txt,,,nKK,,,6+nK+nKK        !读入矩阵所有元素
+(D25.15)
+*dim,Kmartix,,nK,nK                
+*do,i,1,nK                      
+  *do,j,1,nK                    
+    Kmartix(i,j)=tmp(j+nK*(i-1)) 
+  *enddo
+*enddo

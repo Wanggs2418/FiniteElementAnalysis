@@ -1,0 +1,43 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第02讲：求解单层球面网壳的临界荷载
+!!!!算例ex02d：铝合金板式节点网壳的屈曲荷载
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,ex02d
+
+/PREP7
+!!!输入材性，定义单元
+/input,Ex02d_mat,txt
+
+!!!输入节点坐标
+/input,Ex02d_node,txt
+
+!!!输入单元
+/input,Ex02d_ele,txt
+
+!!!定义节点约束
+/input,Ex02d_bc,txt
+
+!!!定义节点荷载
+/input,Ex02d_load,txt
+
+!!静力分析
+/solu 
+antype,0
+pstres,on 
+solve 
+finish 
+
+!!线性屈曲分析
+/solu 
+antype,1                  !定义Eigen buckling分析 
+bucopt,lanb,3             !定义模态数量和提取方法 
+mxpand,3,,,1              !扩展模态并计算单元
+solve 
+finish
+
+!!!显示屈曲模态
+/post1
+set,1,1,
+plnsol,u,z,0,1.0

@@ -1,0 +1,13 @@
+! 读入初始应力文件
+elemNum = 10  !单元个数
+*cfopen, file_95, ist
+    *vwrite, ('!')
+    *vwrite, ('!*******INITIAL STRESS FILE file_95.ist')
+    *vwrite, ('!')
+    *vwrite, ('!')
+    *do, i, 1, elemNum
+        *vwrite, i, !INITIAL STRESS RECORD FOR ELEMENT%8i
+        *vwrite, ('!     SX            SY            SZ          SXY            SYZ           SXZ')
+        *vwrite, i, eis, %8i, 1
+    *enddo
+*cfclos

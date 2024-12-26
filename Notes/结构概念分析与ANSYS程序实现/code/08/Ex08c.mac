@@ -1,0 +1,98 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第08讲：动力学分析入门
+!!!!算例Ex08c
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex08c
+
+!!!!!!!!!!!参数输入
+/prep7
+Flag=1                        !!!控制参数,1=初始态，2=终态
+PI=3.1415926535
+Ex=1.90e11                !!!钢丝弹性模量
+d0=0.005                    !!!钢丝直径5mm
+Area=49*d0*d0*PI/4        !!7x7平行钢丝束
+L=20                            !!!跨度
+M1=1000                        !!!均布质量
+NN=100                        !!!分段数量
+dL=L/NN                        !!!分段长度
+M0=M1*dL                    !!!各节点处的集中质量
+inis=1e-3                    !!!初应变
+
+!!!定义单元类型材料类型实常数
+/prep7
+et,1,link10
+keyopt,1,3,0        !!!只拉不压单元
+mp,ex,1,Ex
+r,1,Area,inis
+et,2,mass21
+r,2,0,M0,0            !!!仅考虑竖向质量
+
+!!!定义单元和节点
+*do,i,1,NN+1             !!!!定义节点
+  n,i,(i-1)*dL,0,0
+*enddo
+type,1                        !!!定义索单元
+real,1
+mat,1
+*do,i,1,NN
+  e,i,i+1
+*enddo
+type,2                        !!!定义质量单元
+real,2
+*do,i,2,NN
+  e,i
+*enddo
+
+!!!定义约束
+d,all,uz,0
+d,1,ux,0
+d,1,uy,0
+d,NN+1,ux,0
+d,NN+1,uy,0
+
+*if,Flag,eq,1,then      !!!初始态
+ /solu
+ antype,static
+ time,1
+ pstres,on                        !!!必须打开预应力开关
+ solve
+ finish
+ /solu 
+ antype,modal         !!!模态分析 
+ pstres,on            !!!考虑预应力效应 
+ modopt,lanb,NN-1 
+ mxpand,NN-1
+ solve
+*else                                  !!!终态
+ /solu
+ time,1
+ antype,static
+ acel,0,9.8,0         !!!施加重力荷载
+ pstres,on
+ solve
+ finish
+ /solu 
+ antype,2             !!!模态分析 
+ pstres,on
+ modopt,lanb,NN-1
+ mxpand,NN-1
+ solve
+*endif
+
+!!!!!!!!后处理
+/post1
+set,first
+esel,u,type,,2
+plnsol,u,y,0,1.0
+
+!!!!!!讲课过程中修改命令流
+!/prep7
+!upcoord,1                            !!!更新节点坐标
+!upgeom,1,1,last,'Ex08c','rst'
+!psolve,eiglanb
+!psolve,eigexp
+!nlgeom,on
+!nsubst,50
+!outres,all,all       !!!输出每一子步的结果 

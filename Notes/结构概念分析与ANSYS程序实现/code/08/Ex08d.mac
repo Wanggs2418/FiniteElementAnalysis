@@ -1,0 +1,86 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第08讲：动力学分析入门
+!!!!算例Ex08d
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex08d
+/uis,msgpop,3         !!!仅仅弹出错误提示，时程分析中常用
+/nerr,0  
+/config,nres,20000
+
+!!!!!!!!!!!参数输入
+/prep7
+PI=3.1415926535
+Ex=1.90e11                !!!钢丝弹性模量
+d0=0.005                    !!!钢丝直径5mm
+Area=49*d0*d0*PI/4        !!7x7平行钢丝束
+L=20                            !!!跨度
+M1=1000                        !!!均布质量
+NN=10                            !!!分段数量
+dL=L/NN                        !!!分段长度
+M0=M1*dL                    !!!各节点处的集中质量
+inis=1e-3                    !!!初应变
+
+!!!定义单元类型材料类型实常数
+/prep7
+et,1,link10
+keyopt,1,3,0        !!!只拉不压单元
+mp,ex,1,Ex
+r,1,Area,inis
+et,2,mass21
+r,2,0,M0,0            !!!仅考虑竖向质量
+
+!!!定义单元和节点
+*do,i,1,NN+1             !!!!定义节点
+  n,i,(i-1)*dL,0,0
+*enddo
+type,1                        !!!定义索单元
+real,1
+mat,1
+*do,i,1,NN
+  e,i,i+1
+*enddo
+type,2                        !!!定义质量单元
+real,2
+*do,i,2,NN
+  e,i
+*enddo
+
+!!!定义约束
+d,all,uz,0
+d,1,ux,0
+d,1,uy,0
+d,NN+1,ux,0
+d,NN+1,uy,0
+
+/solu
+antype,trans      !!!动力时程分析
+outres,all,all    !!!输出每个荷载步
+nlgeom,on                    !!!打开几何大变形开关
+F0=1e3                        !!!瞬时冲击荷载
+kbc,0                            !!!设置荷载增加方式为突增
+time,0.005                !!!在0~0.005s时间内施加荷载
+deltim,0.0005            !!!dtime设为0.005秒
+*do,i,2,NN                !!!按正弦分布施加荷载
+  x=(i-1)*dL
+  f,i,fy,F0*sin(PI*x/L)
+*enddo
+solve
+time,0.01                    !!!在0.005~0.01s时间内撤销荷载
+*do,i,2,NN
+  f,i,fy,0
+*enddo
+solve
+*do,i,1,40
+  deltim,0.02
+  time,i*0.1+0.01
+  solve
+*enddo
+
+/post26   
+nsol,2,NN/2+1,u,y
+deriv,3,2,1          !!!!!!!对变量2进行对变量1(time)的微分，得到速度!!!!!!!!
+deriv,4,3,1          !!!!!!!对变量3进行对变量1(time)的微分，得到加速度!!!!!!!!!
+xvar,1
+plvar,2

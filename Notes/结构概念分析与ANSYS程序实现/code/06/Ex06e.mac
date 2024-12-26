@@ -1,0 +1,72 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第06讲：认识材料非线性
+!!!!算例Ex06d
+!!!!静水压力作用下的圆球,simga1=sigma2=sigma3
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex06d
+
+!!!!参数输入
+/prep7
+dd=0.5      !!球直径
+Ex=2.06e11  !!弹性模量
+Nu=0.3           !!泊松比
+Fy=235e6        !!屈服强度
+pp=500.0e6    !!静水压力，N/m^2
+
+!!!!定义单元类型，实常数，材料特性 
+et,1,solid186
+mp,ex,1,Ex
+mp,prxy,1,Nu
+tb,bkin,1,1,2,1
+tbdata,,Fy,0
+
+!!!!建立几何模型
+sph4,,,dd
+wpave,0,0,0
+vsbw,all
+wpave,0,0,0
+wprota,,,90
+vsbw,all
+wpave,0,0,0
+wprota,,90
+vsbw,all
+
+!!!!划分单元
+mshape,1,3d
+mshkey,0
+esize,0.1
+vmesh,all
+
+!!!!施加约束
+dk,7,all,all    !!球心
+dk,1,ux,0
+dk,3,ux,0
+dk,2,uy,0
+dk,4,uy,0
+dk,5,uz,0
+dk,6,uz,0
+dtran
+
+!!!!施加荷载
+asel,s,,,1,2
+asel,a,,,10,11
+asel,a,,,13,14
+asel,a,,,16,17
+sfa,all,1,pres,pp
+asel,all
+sftran
+
+!!!!进入求解器
+/solu
+time,1
+outres,all,all
+nsubst,10
+nlgeom,on
+solve
+finish
+
+!!!后处理
+/post1
+plnsol,s,eqv,0,1.0

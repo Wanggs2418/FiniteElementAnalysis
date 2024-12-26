@@ -1,0 +1,87 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第03讲：认识应力刚度
+!!!!算例Ex03b-5根杆4个弹簧
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+finish
+/clear
+/filname,ex03b
+
+!!!参数输入
+/prep7
+Ex=2.0e11
+Area=0.01
+L=1
+k=1000
+P=1000
+NN=4        !!!弹簧数量
+
+!!!定义单元类型，实常数，材料类型
+et,1,link180
+mp,ex,1,Ex
+r,1,Area
+et,2,combin14
+r,2,k
+
+!!!定义节点
+*do,i,1,NN+2
+ n,i,0,(i-1)*L
+*enddo
+*do,i,2,NN+1
+ n,1000+i,1,(i-1)*L
+*enddo
+
+!!!定义杆单元
+type,1
+real,1
+mat,1
+*do,i,1,NN+1
+ e,i,i+1
+*enddo
+
+!!!定义弹簧单元
+type,2
+real,2
+mat,2
+*do,i,2,NN+1
+ e,i,i+1000
+*enddo
+
+!!!施加约束
+d,1,ux,0
+d,1,uy,0
+d,NN+2,ux,0
+*do,i,2,NN+1
+ d,i+1000,all,0
+*enddo
+d,all,uz,0  !约束平面外的位移
+
+!!!施加荷载
+f,NN+2,fy,-P
+
+!!!首先进行静力求解
+/solu
+antype,0
+pstres,on
+solve
+finish
+
+!!!然后进行屈曲分析
+/solu
+antype,1
+! bucopt,subs,NN  !采用子空间迭代法计算
+bucopt, lanb, NN !读取刚度时必须采用lanb方法 
+mxpand,NN,,,1
+solve
+
+!!!后处理
+/post1
+set,1,1
+esel,s,type,,1  !只选择第一种单元，即杆单元
+/eshape,1
+plnsol,u,x,0,1.0
+
+!!!读取刚度矩阵
+! 类似于函数，接受两个参数,字符串变量
+! 1表示刚度矩阵；2表示应力刚度矩阵
+!getK,'Ex03b',2

@@ -1,0 +1,88 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第03讲：认识应力刚度
+!!!!算例ex03c-带扭转弹簧的杆
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+finish
+/clear
+/filname,ex03c
+
+!!!参数输入
+/prep7
+Ex=2.0e11
+b=0.3
+L=1
+k=1000
+P=1000
+NN=99        !!!弹簧数量
+
+!!!定义单元类型，实常数，材料类型
+et,1,beam188
+mp,ex,1,Ex
+sectype,1,beam,rect          !!定义截面类型
+secoffset,cent                     !!截面按形心对中
+secdata,b,b                            !!定义截面参数
+et,2,combin14
+keyopt,2,2,6
+r,2,k
+
+!!!定义节点
+*do,i,1,NN+1
+  n,2*i-1,0,(i-1)*L
+  n,2*i,0,i*L
+*enddo
+
+!!!定义梁单元
+type,1
+secnum,1
+mat,1
+*do,i,1,NN+1
+  e,2*i-1,2*i
+*enddo
+
+!!!定义弹簧单元
+type,2
+real,2
+mat,2
+! 取第2类的弹簧单元
+*do,i,1,NN
+ e,2*i,2*i+1    !定义2，3等弹簧连接的节点
+*enddo
+
+!!!施加约束
+d,all,uz,0  !平面外的进行约束
+d,all,rotx,0    
+d,all,roty,0    !仅留绕z轴的转动
+d,1,ux,0
+d,1,uy,0
+d,2*NN+2,ux,0
+! 让所有坐标重合的节点x方向变形连接到一起
+! 扭转弹簧是绕z轴的转动
+cpintf,ux,0
+cpintf,uy,0
+
+!!!施加荷载
+f,2*NN+2,fy,-P
+
+!!!首先进行静力求解
+/solu
+antype,0
+pstres,on
+solve
+finish
+
+!!!然后进行屈曲分析
+/solu
+antype,1
+bucopt,subs,NN
+mxpand,NN,,,1
+solve
+
+!!!后处理
+/post1
+set,1,1
+esel,s,type,,1
+plnsol,u,x,0,1.0
+
+!!!读取刚度矩阵
+!getK,'ex03c',1

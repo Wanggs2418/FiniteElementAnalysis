@@ -2,21 +2,29 @@
 
 ## Notes
 
+有限元软件操作及入门，以 ANSYS 为主。
+
+具体 ANSYS 代码及资源介绍可见 [ANSYS_Code](https://github.com/Wanggs2418/ANSYS_Code) 仓库
+
 - ANSYS_intro：详细记录 APDL 学习过程中的疑难问题；
+- [结构概念分析与ANSYS程序实现](https://www.bilibili.com/video/BV1d4411V7wJ/?spm_id_from=333.337.search-card.all.click)：同济大学郭小农 ANSYS 实践课程对应的代码及课件；
 - ANSYS_WORKBENCH：入门笔记；
 - ABAQUS_intro：入门笔记
 
 
 
-## Doc
+## FEA_Theory
 
+FiniteElementAnalysis 有限元分析理论
+
+### Doc
+
+- Altair 的电子书：《有限元仿真实践原理-学生参考书》
+- 张雄教授《有限元法基础》;
 - 冯元桢先生的英文书《Classical and Computational Solid Mechanics》，葛东云、陆明万两位教授翻译冯元桢先生的《连续介质力学初级教程》；
 - O.C. Zienkiewicz 教授的三册开山著作《The Finite Element Method》;
-- 张雄教授《有限元法基础》;
 
-
-
-## Comosol
+### Comosol
 
 > [Comosol](http://cn.comsol.com/)
 
@@ -24,9 +32,7 @@
 
 有限元内容基础：**[Comsol 的多物理场仿真百科](http://cn.comsol.com/multiphysics)**
 
-
-
-## Altair
+### Altair
 
 > [Altair 企业网盘-详细资料](https://nas.altair.com.cn:5001/fsdownload/DhVLPcodc/Altair-KnowledgeBase)
 

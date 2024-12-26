@@ -1,0 +1,20 @@
+finish
+/clear
+/prep7
+et, 1, 45
+blc4,,, 10, 10, 20
+esize, 5
+vmesh, all
+
+! slope=-2*0.3fy/midLen
+! sum_value = 0.3fy+(slope×(x-0))
+! 定义面荷载梯度
+initFactor = 0.3
+midLen = mainWidth/2
+slope_x1 = -2*initFactor*mainFy/midLen
+slope_x2 = 2*initFactor*mainFy/midLen
+sfgrad, pres,, x, 0, slope_x1
+
+nsel, s, loc, 
+elsn
+sfe, all, 

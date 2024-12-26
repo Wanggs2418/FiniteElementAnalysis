@@ -1,0 +1,64 @@
+cmsel, s, mainsteel
+eslv
+nsle
+dsys,1
+! 1.初始应力场计算，导出初始应力文件
+/solu
+
+nsel,s,loc,y,0
+
+d,all,uy,0      
+
+nsel,s,loc,x,0
+
+nsel,a,loc,x,50
+
+d,all,ux,0
+
+allsel
+
+acel,,10
+
+ISWRITE,1     
+
+solve 
+
+! 2.导入初始应力文件，不施加重力荷载
+/solu
+
+nsel,s,loc,y,0
+
+d,all,uy,0    
+
+nsel,s,loc,x,0
+
+nsel,a,loc,x,50
+
+d,all,ux,0
+
+allsel
+! 以上约束同第一步
+
+isfile,read,DY1,ist     
+
+solve 
+
+! 3.导入初始应力文件，施加重力荷载。
+nsel,s,loc,y,0
+
+d,all,uy,0       
+
+nsel,s,loc,x,0
+
+nsel,a,loc,x,50
+
+d,all,ux,0
+
+allsel
+
+acel,,10
+
+isfile,read,DY1,ist     
+
+solve 
+

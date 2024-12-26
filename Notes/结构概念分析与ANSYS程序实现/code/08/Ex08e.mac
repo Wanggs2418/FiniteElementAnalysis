@@ -1,0 +1,116 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!第08讲：动力学分析入门
+!!!!算例Ex08e
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+finish
+/clear
+/filname,Ex08e
+
+!!!!输入基本参数，计算反应谱曲线
+Tg0=0.25                    !!!特征周期
+alfmax0=0.16            !!!最大地震影响系数
+kesi=0.05                    !!!阻尼比
+spec2010,Tg0,alfmax0,kesi           !计算反应谱
+
+!!!!定义单元类型和实常数
+/prep7
+et,1,mass21     !质量单元
+r,1,2000        !m1=2000kg
+r,2,1500        !m2=1500kg
+r,3,1000        !m3=1000kg
+et,2,combin14   !定义弹簧单元模拟层间刚度
+keyopt,2,2,1    !X方向剪切弹簧
+r,4,1800000     !k1=1800kN/m
+r,5,1200000     !k2=1200kN/m
+r,6,600000      !k3=600kN/m
+
+!!!!定义节点
+n,1,0,0,0
+n,2,0,5,0
+n,3,0,9,0
+n,4,0,13,0
+
+!!!!定义单元
+type,1          !建立单元m1
+real,1
+e,2   
+type,1          !建立单元m2
+real,2
+e,3   
+type,1          !建立单元m3
+real,3
+e,4   
+type,2          !建立单元k1
+real,4
+e,1,2   
+type,2          !建立单元k2
+real,5
+e,2,3   
+type,2          !建立单元k3
+real,6
+e,3,4   
+d,1,all         !约束节点1
+
+!!!!第1步：静力分析 
+/solu
+antype,static
+solve
+finish
+
+!!!!第2步：模态分析
+/solu
+antype,modal              !求振型和频率
+modopt,lanb,3             !求前3阶振型，振型标准化
+mxpand,3,,,yes                 !扩展模态，计算单元解和反力
+solve
+finish
+
+!!!!第3步：反应谱分析,计算各阶振型的响应
+/solu
+antype,spectr                 !求振型和频率
+spopt,sprs,3,yes              !单一反应谱
+sed,1                         !X方向地震作用
+svtype,2,1.0                  !加速度谱
+*do,i,1,18
+  freq,fre(i)
+  sv,,ace(i)
+*enddo
+solve
+finish
+
+!!!!第4步：反应谱分析,计算振型参与系数,生成*.mcom文件 
+/solu
+antype,spectr
+cqc,,disp                !应用SRSS方法计算效应,该命令将写*.mcom文件
+solve
+finish
+
+!!!后处理
+/post1
+set,1,1               !画出第1模态的弹簧单元轴力图
+etable,N1,smisc,1        
+plls,N1,N1,1,0
+set,1,2               !画出第2模态的弹簧单元轴力图
+etable,N2,smisc,1        
+plls,N2,N2,1,0
+set,1,3               !画出第3模态的弹簧单元轴力图
+etable,N3,smisc,1        
+plls,N3,N3,1,0
+/input,,mcom              !输入*.mcom文件后可查看SSRS内力组合值
+etable,N,smisc,1          !画出弹簧单元轴力图组合值
+plls,N,N,1,0
+
+!!!!讲解过程中修改命令流
+!!!!提取频率，求解alpha和beta
+!/post1
+!set,1,1
+!*get,f1,active,0,set,freq
+!set,1,2
+!*get,f2,active,0,set,freq
+!kesi1=0.05
+!kesi2=0.05
+!alpha=2*f1*f2*(kesi1*f2-kesi2*f1)/(f2**2-f1**2)
+!beta=2*(kesi1*f1-kesi2*f2)/(f2**2-f1**2)
+!/prep7
+!alphad,alpha
+!betad,beta
