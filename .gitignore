@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-doc/
+# doc/
 # doc/ANSYS/ANSYS_Resources
 .Python
 build/
