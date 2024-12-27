@@ -34,7 +34,7 @@ FiniteElementAnalysis 有限元分析理论
 
 ### Altair
 
-> [Altair 企业网盘-详细资料](https://nas.altair.com.cn:5001/fsdownload/DhVLPcodc/Altair-KnowledgeBase)
+> [Altair 企业网盘-详细资料](https://nas.hyperwks.com.cn:5001/fsdownload/DhVLPcodc/Altair-KnowledgeBase)
 
 Altair 的电子书：《有限元仿真实践原理-学生参考书》
 
